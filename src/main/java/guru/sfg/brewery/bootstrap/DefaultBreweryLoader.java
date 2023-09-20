@@ -16,15 +16,41 @@
  */
 package guru.sfg.brewery.bootstrap;
 
-import guru.sfg.brewery.domain.*;
-import guru.sfg.brewery.repositories.*;
+import guru.sfg.brewery.domain.Beer;
+import guru.sfg.brewery.domain.BeerInventory;
+import guru.sfg.brewery.domain.BeerOrder;
+import guru.sfg.brewery.domain.BeerOrderLine;
+import guru.sfg.brewery.domain.Brewery;
+import guru.sfg.brewery.domain.Customer;
+import guru.sfg.brewery.domain.OrderStatusEnum;
+import guru.sfg.brewery.domain.security.Authority;
+import guru.sfg.brewery.domain.security.Role;
+import guru.sfg.brewery.domain.security.User;
+import guru.sfg.brewery.repositories.BeerInventoryRepository;
+import guru.sfg.brewery.repositories.BeerOrderRepository;
+import guru.sfg.brewery.repositories.BeerRepository;
+import guru.sfg.brewery.repositories.BreweryRepository;
+import guru.sfg.brewery.repositories.CustomerRepository;
+import guru.sfg.brewery.repositories.security.AuthorityRepository;
+import guru.sfg.brewery.repositories.security.RoleRepository;
+import guru.sfg.brewery.repositories.security.UserRepository;
 import guru.sfg.brewery.web.model.BeerStyleEnum;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Set;
 import java.util.UUID;
+
+import static guru.sfg.brewery.domain.security.AuthorityConstants.BEER_CREATING;
+import static guru.sfg.brewery.domain.security.AuthorityConstants.BEER_DELETING;
+import static guru.sfg.brewery.domain.security.AuthorityConstants.BEER_READING;
+import static guru.sfg.brewery.domain.security.AuthorityConstants.BEER_UPDATING;
+import static guru.sfg.brewery.domain.security.Role.RoleName.ADMIN;
+import static guru.sfg.brewery.domain.security.Role.RoleName.CUSTOMER;
+import static guru.sfg.brewery.domain.security.Role.RoleName.USER;
 
 
 /**
@@ -34,21 +60,27 @@ import java.util.UUID;
 @Component
 public class DefaultBreweryLoader implements CommandLineRunner {
 
-    public static final String TASTING_ROOM = "Tasting Room";
-    public static final String BEER_1_UPC = "0631234200036";
-    public static final String BEER_2_UPC = "0631234300019";
-    public static final String BEER_3_UPC = "0083783375213";
-
     private final BreweryRepository breweryRepository;
     private final BeerRepository beerRepository;
     private final BeerInventoryRepository beerInventoryRepository;
     private final BeerOrderRepository beerOrderRepository;
     private final CustomerRepository customerRepository;
+    private final UserRepository userRepository;
+    private final RoleRepository roleRepository;
+    private final AuthorityRepository authorityRepository;
+
+    private final PasswordEncoder passwordEncoder;
+
+    public static final String TASTING_ROOM = "Tasting Room";
+    public static final String BEER_1_UPC = "0631234200036";
+    public static final String BEER_2_UPC = "0631234300019";
+    public static final String BEER_3_UPC = "0083783375213";
 
     @Override
     public void run(String... args) {
         loadBreweryData();
         loadCustomerData();
+        loadUserAndAuthoritiesData();
     }
 
     private void loadCustomerData() {
@@ -121,5 +153,48 @@ public class DefaultBreweryLoader implements CommandLineRunner {
                     .build());
 
         }
+    }
+
+    @Transactional
+    public void loadUserAndAuthoritiesData() {
+        //beer authorities
+        Authority beerCreatingAuthority = new Authority().setPermission(BEER_CREATING.getAction());
+        Authority beerReadingAuthority =  new Authority().setPermission(BEER_READING.getAction());
+        Authority beerUpdatingAuthority = new Authority().setPermission(BEER_UPDATING.getAction());
+        Authority beerDeletingAuthority = new Authority().setPermission(BEER_DELETING.getAction());
+
+        authorityRepository.saveAll(Set.of(beerCreatingAuthority, beerUpdatingAuthority, beerDeletingAuthority, beerReadingAuthority));
+
+        Role adminRole = roleRepository.save(new Role().setName(ADMIN.getName()));
+        Role userRole = roleRepository.save(new Role().setName(USER.getName()));
+        Role customerRole = roleRepository.save(new Role().setName(CUSTOMER.getName()));
+
+        adminRole.setAuthorities(Set.of(beerCreatingAuthority, beerUpdatingAuthority, beerDeletingAuthority, beerReadingAuthority));
+        userRole.setAuthorities(Set.of(beerReadingAuthority));
+        customerRole.setAuthorities(Set.of(beerReadingAuthority));
+
+        roleRepository.saveAll(Set.of(adminRole, userRole, customerRole));
+
+        User admin = userRepository.save(new User()
+                .setUsername("admin")
+                .setPassword(passwordEncoder.encode("admin")));
+
+        admin.setRoles(Set.of(adminRole));
+        adminRole.setUsers(Set.of(admin));
+
+        User user = userRepository.save(new User()
+                .setUsername("user")
+                .setPassword(passwordEncoder.encode("user")));
+
+        user.setRoles(Set.of(userRole));
+
+
+        User customer = userRepository.save(new User()
+                .setUsername("customer")
+                .setPassword(passwordEncoder.encode("customer")));
+
+        customer.setRoles(Set.of(customerRole));
+
+        userRepository.saveAll(Set.of(admin, user, customer));
     }
 }

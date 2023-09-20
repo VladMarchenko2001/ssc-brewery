@@ -1,6 +1,8 @@
 package guru.sfg.brewery.domain.security;
 
 import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.ToString;
 import lombok.experimental.Accessors;
 
 import javax.persistence.Entity;
@@ -11,6 +13,7 @@ import javax.persistence.ManyToMany;
 import java.util.Set;
 
 import static javax.persistence.GenerationType.AUTO;
+import static javax.persistence.GenerationType.IDENTITY;
 
 @Data
 @Accessors(chain = true)
@@ -20,7 +23,10 @@ public class Authority {
     @Id
     @GeneratedValue(strategy = AUTO)
     private Integer id;
-    private String role;
+    private String permission;
+
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
     @ManyToMany(mappedBy = "authorities")
-    private Set<User> users;
+    private Set<Role> roles;
 }
