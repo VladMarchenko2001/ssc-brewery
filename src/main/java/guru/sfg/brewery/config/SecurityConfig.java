@@ -33,16 +33,14 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 
     @Override
     protected void configure(HttpSecurity http) throws Exception {
-        http
-                .addFilterBefore(restHeaderAuthFilter(authenticationManager()), UsernamePasswordAuthenticationFilter.class)
-                .csrf().disable();
+        //http
+        //        .addFilterBefore(restHeaderAuthFilter(authenticationManager()), UsernamePasswordAuthenticationFilter.class)
+        //        .csrf().disable();
 
         http
                 .authorizeRequests(authorize -> authorize
                         .antMatchers("/", "/webjars/**", "/login", "/resources/**").permitAll()
                         .antMatchers("/h2-console/**").permitAll()
-                        //.antMatchers(HttpMethod.GET, "/api/v1/beer/**").permitAll()
-                        //.antMatchers(HttpMethod.DELETE, "/api/v1/beer/**").hasAnyRole("ADMIN", "CUSTOMER")
                 )
                 .authorizeRequests()
                 .anyRequest()
@@ -50,25 +48,31 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                 .and()
                 .formLogin()
                 .and()
-                .httpBasic();
+                .httpBasic()
+                .and()
+                .csrf().ignoringAntMatchers("/h2-console/**", "/api/**")
+                .and()
+                .rememberMe()
+                .key("uniqueAndSecret")
+                .userDetailsService(jpaUserDetailsService);
 
         //h2 config
         http.headers().frameOptions().sameOrigin();
     }
 
-    @Override
+    /*@Override
     protected void configure(AuthenticationManagerBuilder auth) throws Exception {
         auth.userDetailsService(jpaUserDetailsService).passwordEncoder(passwordEncoder());
 
-       /* auth.inMemoryAuthentication()
+       *//* auth.inMemoryAuthentication()
                 .withUser("admin")
                 .password("{bcrypt10}$2a$10$b8HAGHPORP3oKHSxgWl2JOgFYRxBLmR/S6Y33IzTCaUYkeEDL1P2u")
                 .roles("ADMIN")
                 .and()
                 .withUser("user")
                 .password("{sha256}2f276b7851864df4ee598ae3b4fec1aa37169fb55a8e68fc86b51adb54ff980d486e0a9a742a1a04")
-                .roles("USER");*/
-    }
+                .roles("USER");*//*
+    }*/
 
     @Bean
     public PasswordEncoder passwordEncoder() {

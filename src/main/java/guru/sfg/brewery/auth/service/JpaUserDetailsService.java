@@ -4,6 +4,7 @@ import guru.sfg.brewery.domain.security.Authority;
 import guru.sfg.brewery.domain.security.User;
 import guru.sfg.brewery.repositories.security.UserRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -18,6 +19,7 @@ import java.util.Set;
 import static java.util.stream.Collectors.toSet;
 import static org.springframework.util.CollectionUtils.isEmpty;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class JpaUserDetailsService implements UserDetailsService {
@@ -27,22 +29,9 @@ public class JpaUserDetailsService implements UserDetailsService {
     @Transactional(readOnly = true)
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-
-        User user = userRepository.findByUsername(username)
+        log.debug("Loading user by username: " + username);
+        return userRepository.findByUsername(username)
                 .orElseThrow(() -> new UsernameNotFoundException("Username " + username + " not found"));
-
-        return buildUser(user);
-    }
-
-    private org.springframework.security.core.userdetails.User buildUser(User user) {
-        return new org.springframework.security.core.userdetails.User(
-                user.getUsername(),
-                user.getPassword(),
-                user.isEnabled(),
-                user.isAccountNonExpired(),
-                user.isCredentialsNonExpired(),
-                user.isAccountNonLocked(),
-                buildAuthorities(user.getAuthorities()));
     }
 
     private Collection<? extends GrantedAuthority> buildAuthorities(Set<Authority> authorities) {

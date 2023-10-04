@@ -16,9 +16,11 @@
  */
 package guru.sfg.brewery.domain;
 
+import lombok.Data;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import lombok.experimental.Accessors;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.GenericGenerator;
 import org.hibernate.annotations.Type;
@@ -32,9 +34,9 @@ import java.util.UUID;
  * Created by jt on 2019-01-26.
  */
 
-@Setter
-@Getter
+@Data
 @NoArgsConstructor
+@Accessors(chain = true)
 @MappedSuperclass
 public class BaseEntity {
 

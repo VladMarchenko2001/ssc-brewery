@@ -44,7 +44,7 @@ public class CustomerController {
 
     @RequestMapping("/find")
     public String findCustomers(Model model){
-        model.addAttribute("customer", Customer.builder().build());
+        model.addAttribute("customer", new Customer());
         return "customers/findCustomers";
     }
 
@@ -78,7 +78,7 @@ public class CustomerController {
 
     @GetMapping("/new")
     public String initCreationForm(Model model) {
-        model.addAttribute("customer", Customer.builder().build());
+        model.addAttribute("customer",new Customer());
         return "customers/createCustomer";
     }
 
@@ -86,9 +86,8 @@ public class CustomerController {
     @PostMapping("/new")
     public String processCreationForm(Customer customer) {
         //ToDO: Add Service
-        Customer newCustomer = Customer.builder()
-                .customerName(customer.getCustomerName())
-                .build();
+        Customer newCustomer = new Customer()
+                .setCustomerName(customer.getCustomerName());
 
         Customer savedCustomer= customerRepository.save(newCustomer);
         return "redirect:/customers/" + savedCustomer.getId();

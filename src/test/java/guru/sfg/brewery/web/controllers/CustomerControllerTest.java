@@ -58,8 +58,8 @@ class CustomerControllerTest {
     @BeforeEach
     void setUp() {
         customerList = new ArrayList<Customer>();
-        customerList.add(Customer.builder().customerName("John Doe").build());
-        customerList.add(Customer.builder().customerName("John Doe").build());
+        customerList.add(new Customer().setCustomerName("John Doe"));
+        customerList.add(new Customer().setCustomerName("John Doe"));
 
         final String id = "493410b3-dd0b-4b78-97bf-289f50f6e74f";
         uuid = UUID.fromString(id);
@@ -91,7 +91,9 @@ class CustomerControllerTest {
 
     @Test
     void showCustomer() throws Exception{
-        when(customerRepository.findById(uuid)).thenReturn(Optional.of(Customer.builder().id(uuid).build()));
+        Customer customer = new Customer();
+        customer.setId(uuid);
+        when(customerRepository.findById(uuid)).thenReturn(Optional.of(customer));
         mockMvc.perform(get("/customers/"+uuid))
                 .andExpect(status().isOk())
                 .andExpect(view().name("customers/customerDetails"))
@@ -109,7 +111,9 @@ class CustomerControllerTest {
 
     @Test
     void processCreationForm() throws Exception{
-        when(customerRepository.save(ArgumentMatchers.any())).thenReturn(Customer.builder().id(uuid).build());
+        Customer customer = new Customer();
+        customer.setId(uuid);
+        when(customerRepository.save(ArgumentMatchers.any())).thenReturn(customer);
         mockMvc.perform(post("/customers/new"))
                 .andExpect(status().is3xxRedirection())
                 .andExpect(view().name("redirect:/customers/"+ uuid))
@@ -119,7 +123,9 @@ class CustomerControllerTest {
 
     @Test
     void initUpdateCustomerForm() throws Exception{
-        when(customerRepository.findById(uuid)).thenReturn(Optional.of(Customer.builder().id(uuid).build()));
+        Customer customer = new Customer();
+        customer.setId(uuid);
+        when(customerRepository.findById(uuid)).thenReturn(Optional.of(customer));
         mockMvc.perform(get("/customers/"+uuid+"/edit"))
                 .andExpect(status().isOk())
                 .andExpect(view().name("customers/createOrUpdateCustomer"))
@@ -129,7 +135,9 @@ class CustomerControllerTest {
 
     @Test
     void processUpdationForm() throws Exception{
-        when(customerRepository.save(ArgumentMatchers.any())).thenReturn(Customer.builder().id(uuid).build());
+        Customer customer = new Customer();
+        customer.setId(uuid);
+        when(customerRepository.findById(uuid)).thenReturn(Optional.of(customer));
 
         mockMvc.perform(post("/customers/"+uuid+"/edit"))
                 .andExpect(status().is3xxRedirection())

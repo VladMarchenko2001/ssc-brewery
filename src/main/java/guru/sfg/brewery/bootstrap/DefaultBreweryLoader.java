@@ -16,21 +16,11 @@
  */
 package guru.sfg.brewery.bootstrap;
 
-import guru.sfg.brewery.domain.Beer;
-import guru.sfg.brewery.domain.BeerInventory;
-import guru.sfg.brewery.domain.BeerOrder;
-import guru.sfg.brewery.domain.BeerOrderLine;
-import guru.sfg.brewery.domain.Brewery;
-import guru.sfg.brewery.domain.Customer;
-import guru.sfg.brewery.domain.OrderStatusEnum;
+import guru.sfg.brewery.domain.*;
 import guru.sfg.brewery.domain.security.Authority;
 import guru.sfg.brewery.domain.security.Role;
 import guru.sfg.brewery.domain.security.User;
-import guru.sfg.brewery.repositories.BeerInventoryRepository;
-import guru.sfg.brewery.repositories.BeerOrderRepository;
-import guru.sfg.brewery.repositories.BeerRepository;
-import guru.sfg.brewery.repositories.BreweryRepository;
-import guru.sfg.brewery.repositories.CustomerRepository;
+import guru.sfg.brewery.repositories.*;
 import guru.sfg.brewery.repositories.security.AuthorityRepository;
 import guru.sfg.brewery.repositories.security.RoleRepository;
 import guru.sfg.brewery.repositories.security.UserRepository;
@@ -42,15 +32,11 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Set;
-import java.util.UUID;
 
-import static guru.sfg.brewery.domain.security.AuthorityConstants.BEER_CREATING;
-import static guru.sfg.brewery.domain.security.AuthorityConstants.BEER_DELETING;
-import static guru.sfg.brewery.domain.security.AuthorityConstants.BEER_READING;
-import static guru.sfg.brewery.domain.security.AuthorityConstants.BEER_UPDATING;
-import static guru.sfg.brewery.domain.security.Role.RoleName.ADMIN;
-import static guru.sfg.brewery.domain.security.Role.RoleName.CUSTOMER;
-import static guru.sfg.brewery.domain.security.Role.RoleName.USER;
+import static guru.sfg.brewery.domain.OrderStatusEnum.NEW;
+import static guru.sfg.brewery.domain.security.AuthorityConstants.*;
+import static guru.sfg.brewery.domain.security.Role.RoleName.*;
+import static java.util.UUID.randomUUID;
 
 
 /**
@@ -78,29 +64,84 @@ public class DefaultBreweryLoader implements CommandLineRunner {
 
     @Override
     public void run(String... args) {
-        loadBreweryData();
-        loadCustomerData();
         loadUserAndAuthoritiesData();
+        loadBreweryData();
+        loadTestingRoomData();
+        loadCustomerData();
     }
 
-    private void loadCustomerData() {
-        Customer tastingRoom = Customer.builder()
-                .customerName(TASTING_ROOM)
-                .apiKey(UUID.randomUUID())
-                .build();
+    private void loadUserAndAuthoritiesData() {
+        //beer authorities
+        Authority beerCreatingAuthority = new Authority().setPermission(BEER_CREATING.getAction());
+        Authority beerReadingAuthority =  new Authority().setPermission(BEER_READING.getAction());
+        Authority beerUpdatingAuthority = new Authority().setPermission(BEER_UPDATING.getAction());
+        Authority beerDeletingAuthority = new Authority().setPermission(BEER_DELETING.getAction());
 
-        customerRepository.save(tastingRoom);
+        //customer authorities
+        Authority customerCreatingAuthority = new Authority().setPermission(CUSTOMER_CREATING.getAction());
+        Authority customerReadingAuthority =  new Authority().setPermission(CUSTOMER_READING.getAction());
+        Authority customerUpdatingAuthority = new Authority().setPermission(CUSTOMER_UPDATING.getAction());
+        Authority customerDeletingAuthority = new Authority().setPermission(CUSTOMER_DELETING.getAction());
 
-        beerRepository.findAll().forEach(beer -> {
-            beerOrderRepository.save(BeerOrder.builder()
-                    .customer(tastingRoom)
-                    .orderStatus(OrderStatusEnum.NEW)
-                    .beerOrderLines(Set.of(BeerOrderLine.builder()
-                            .beer(beer)
-                            .orderQuantity(2)
-                            .build()))
-                    .build());
-        });
+        //brewery authorities
+        Authority breweryCreatingAuthority = new Authority().setPermission(BREWERY_CREATING.getAction());
+        Authority breweryReadingAuthority =  new Authority().setPermission(BREWERY_READING.getAction());
+        Authority breweryUpdatingAuthority = new Authority().setPermission(BREWERY_UPDATING.getAction());
+        Authority breweryDeletingAuthority = new Authority().setPermission(BREWERY_DELETING.getAction());
+
+        //order authorities
+        Authority orderCreatingAuthority = new Authority().setPermission(ORDER_CREATING.getAction());
+        Authority orderReadingAuthority =  new Authority().setPermission(ORDER_READING.getAction());
+        Authority orderUpdatingAuthority = new Authority().setPermission(ORDER_UPDATING.getAction());
+        Authority orderDeletingAuthority = new Authority().setPermission(ORDER_DELETING.getAction());
+
+        //customer order authorities
+        Authority customerOrderCreatingAuthority = new Authority().setPermission(CUSTOMER_ORDER_CREATING.getAction());
+        Authority customerOrderReadingAuthority =  new Authority().setPermission(CUSTOMER_ORDER_READING.getAction());
+        Authority customerOrderUpdatingAuthority = new Authority().setPermission(CUSTOMER_ORDER_UPDATING.getAction());
+        Authority customerOrderDeletingAuthority = new Authority().setPermission(CUSTOMER_ORDER_DELETING.getAction());
+
+        authorityRepository.saveAll(Set.of(beerCreatingAuthority, beerUpdatingAuthority, beerDeletingAuthority, beerReadingAuthority));
+
+        Role adminRole = roleRepository.save(new Role().setName(ADMIN.getName()));
+        Role userRole = roleRepository.save(new Role().setName(USER.getName()));
+        Role customerRole = roleRepository.save(new Role().setName(CUSTOMER.getName()));
+
+        adminRole.setAuthorities(Set.of(
+                beerCreatingAuthority, beerReadingAuthority, beerUpdatingAuthority, beerDeletingAuthority,
+                customerCreatingAuthority, customerReadingAuthority, customerUpdatingAuthority, customerDeletingAuthority,
+                breweryCreatingAuthority, breweryReadingAuthority, breweryUpdatingAuthority, breweryDeletingAuthority,
+                orderCreatingAuthority, orderReadingAuthority, orderUpdatingAuthority, orderDeletingAuthority));
+
+        customerRole.setAuthorities(Set.of(
+                beerReadingAuthority, breweryReadingAuthority,
+                customerOrderCreatingAuthority, customerOrderReadingAuthority, customerOrderUpdatingAuthority, customerOrderDeletingAuthority));
+
+        userRole.setAuthorities(Set.of(beerReadingAuthority));
+
+        roleRepository.saveAll(Set.of(adminRole, userRole, customerRole));
+
+        User admin = userRepository.save(new User()
+                .setUsername("admin")
+                .setPassword(passwordEncoder.encode("admin")));
+
+        admin.setRoles(Set.of(adminRole));
+        adminRole.setUsers(Set.of(admin));
+
+        User user = userRepository.save(new User()
+                .setUsername("user")
+                .setPassword(passwordEncoder.encode("user")));
+
+        user.setRoles(Set.of(userRole));
+
+
+        User customer = userRepository.save(new User()
+                .setUsername("customer")
+                .setPassword(passwordEncoder.encode("customer")));
+
+        customer.setRoles(Set.of(customerRole));
+
+        userRepository.saveAll(Set.of(admin, user, customer));
     }
 
     private void loadBreweryData() {
@@ -155,46 +196,71 @@ public class DefaultBreweryLoader implements CommandLineRunner {
         }
     }
 
-    @Transactional
-    public void loadUserAndAuthoritiesData() {
-        //beer authorities
-        Authority beerCreatingAuthority = new Authority().setPermission(BEER_CREATING.getAction());
-        Authority beerReadingAuthority =  new Authority().setPermission(BEER_READING.getAction());
-        Authority beerUpdatingAuthority = new Authority().setPermission(BEER_UPDATING.getAction());
-        Authority beerDeletingAuthority = new Authority().setPermission(BEER_DELETING.getAction());
+    private void loadTestingRoomData() {
+        Customer tastingRoom = new Customer()
+                .setCustomerName(TASTING_ROOM)
+                .setApiKey(randomUUID());
 
-        authorityRepository.saveAll(Set.of(beerCreatingAuthority, beerUpdatingAuthority, beerDeletingAuthority, beerReadingAuthority));
+        customerRepository.save(tastingRoom);
 
-        Role adminRole = roleRepository.save(new Role().setName(ADMIN.getName()));
-        Role userRole = roleRepository.save(new Role().setName(USER.getName()));
-        Role customerRole = roleRepository.save(new Role().setName(CUSTOMER.getName()));
+        beerRepository.findAll().forEach(beer -> {
+            beerOrderRepository.save(new BeerOrder()
+                    .setCustomer(tastingRoom)
+                    .setOrderStatus(NEW)
+                    .setBeerOrderLines(Set.of(new BeerOrderLine()
+                            .setBeer(beer)
+                            .setOrderQuantity(2))));
+        });
+    }
 
-        adminRole.setAuthorities(Set.of(beerCreatingAuthority, beerUpdatingAuthority, beerDeletingAuthority, beerReadingAuthority));
-        userRole.setAuthorities(Set.of(beerReadingAuthority));
-        customerRole.setAuthorities(Set.of(beerReadingAuthority));
+    private void loadCustomerData() {
+        Role customerRole = roleRepository.findByName(CUSTOMER.getName()).orElseThrow();
 
-        roleRepository.saveAll(Set.of(adminRole, userRole, customerRole));
+        Customer stPeteCustomer = new Customer()
+                .setCustomerName("St Pete Customer")
+                .setApiKey(randomUUID());
 
-        User admin = userRepository.save(new User()
-                .setUsername("admin")
-                .setPassword(passwordEncoder.encode("admin")));
+        Customer dunedinCustomer = new Customer()
+                .setCustomerName("Dunedin Customer")
+                .setApiKey(randomUUID());
 
-        admin.setRoles(Set.of(adminRole));
-        adminRole.setUsers(Set.of(admin));
+        Customer keyWestCustomer = new Customer()
+                .setCustomerName("Key West Customer")
+                .setApiKey(randomUUID());
 
-        User user = userRepository.save(new User()
-                .setUsername("user")
-                .setPassword(passwordEncoder.encode("user")));
+        customerRepository.saveAll(Set.of(stPeteCustomer, dunedinCustomer, keyWestCustomer));
 
-        user.setRoles(Set.of(userRole));
+        User stPeteUser = new User()
+                .setUsername("stPeteUser")
+                .setCustomer(stPeteCustomer)
+                .setRoles(Set.of(customerRole))
+                .setPassword(passwordEncoder.encode("stPeteUser"));
 
+        User dunedinUser = new User()
+                .setUsername("dunedinUser")
+                .setCustomer(dunedinCustomer)
+                .setRoles(Set.of(customerRole))
+                .setPassword(passwordEncoder.encode("dunedinUser"));
 
-        User customer = userRepository.save(new User()
-                .setUsername("customer")
-                .setPassword(passwordEncoder.encode("customer")));
+        User keyWestUser = new User()
+                .setUsername("keyWestUser")
+                .setCustomer(keyWestCustomer)
+                .setRoles(Set.of(customerRole))
+                .setPassword(passwordEncoder.encode("keyWestUser"));
 
-        customer.setRoles(Set.of(customerRole));
+        userRepository.saveAll(Set.of(stPeteUser, dunedinUser, keyWestUser));
+        
+        createOrder(stPeteCustomer);
+        createOrder(dunedinCustomer);
+        createOrder(keyWestCustomer);
+    }
 
-        userRepository.saveAll(Set.of(admin, user, customer));
+    private BeerOrder createOrder(Customer customer) {
+        return beerOrderRepository.save(new BeerOrder()
+                .setCustomer(customer)
+                .setOrderStatus(NEW)
+                .setBeerOrderLines(Set.of(new BeerOrderLine()
+                        .setBeer(beerRepository.findByUpc(BEER_1_UPC))
+                        .setOrderQuantity(2))));
     }
 }
