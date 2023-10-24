@@ -136,6 +136,13 @@
             <artifactId>bootstrap</artifactId>
             <version>${webjars-bootstrap.version}</version>
         </dependency>
+
+        <!--TOTP google2Fa-->
+        <dependency>
+            <groupId>com.warrenstrange</groupId>
+            <artifactId>googleauth</artifactId>
+            <version>1.5.0</version>
+        </dependency>
         <!-- end of webjars -->
         <dependency>
             <groupId>org.springframework.boot</groupId>

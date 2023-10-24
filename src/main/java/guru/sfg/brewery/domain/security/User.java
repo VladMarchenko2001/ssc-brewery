@@ -15,7 +15,6 @@ import java.util.Set;
 
 import static java.util.stream.Collectors.toSet;
 import static javax.persistence.CascadeType.MERGE;
-import static javax.persistence.CascadeType.PERSIST;
 import static javax.persistence.FetchType.EAGER;
 import static javax.persistence.GenerationType.AUTO;
 
@@ -47,6 +46,16 @@ public class User implements UserDetails, CredentialsContainer {
     private boolean isAccountNonLocked = true;
     private boolean isCredentialsNonExpired = true;
     private boolean isEnabled = true;
+
+    private boolean isGoogle2FaEnabled;
+
+    @Transient
+    private boolean isGoogle2FaRequired = true;
+
+    @Transient
+    private Set<Authority> authorities;
+
+    private String google2FaSecret;
 
     @Transient
     public Set<SimpleGrantedAuthority> getAuthorities() {

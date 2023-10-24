@@ -2,6 +2,7 @@ package guru.sfg.brewery.config;
 
 import guru.sfg.brewery.auth.service.JpaUserDetailsService;
 import guru.sfg.brewery.filter.RestHeaderAuthFilter;
+import guru.sfg.brewery.filter.google.Google2FaFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -12,6 +13,7 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
 import org.springframework.security.crypto.factory.PasswordEncoderFactories;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.web.session.SessionManagementFilter;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 
 @Configuration
@@ -21,6 +23,7 @@ import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 public class SecurityConfig extends WebSecurityConfigurerAdapter {
 
     private final JpaUserDetailsService jpaUserDetailsService;
+    private final Google2FaFilter google2FaFilter;
 
     public RestHeaderAuthFilter restHeaderAuthFilter(AuthenticationManager authenticationManager) throws Exception {
         RestHeaderAuthFilter filter = new RestHeaderAuthFilter(new AntPathRequestMatcher("/api/**"));
@@ -33,6 +36,9 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
         //http
         //        .addFilterBefore(restHeaderAuthFilter(authenticationManager()), UsernamePasswordAuthenticationFilter.class)
         //        .csrf().disable();
+
+        http
+                .addFilterBefore(google2FaFilter, SessionManagementFilter.class);
 
         http
                 .authorizeRequests(authorize -> authorize
